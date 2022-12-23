@@ -5,8 +5,8 @@ all: SDL
 configure:
 	-rm -rf external
 	mkdir external
-	cd external && git clone https://github.com/libsdl-org/SDL
-	cd external && git clone https://github.com/libsdl-org/SDL_image
+	# cd external && git clone https://github.com/libsdl-org/SDL
+	# cd external && git clone https://github.com/libsdl-org/SDL_image
 	make re
 
 re: clean reSDL all 
