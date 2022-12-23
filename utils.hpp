@@ -189,7 +189,7 @@ public:
         return true;
     }
 
-    bool operator==(NDVector<T, D> const &other) const {
+    int operator==(NDVector<T, D> const &other) const {
         uint count = 0;
         for (uint i = 0; i < D; ++i) 
             count += other[i] == (*this)[i];
