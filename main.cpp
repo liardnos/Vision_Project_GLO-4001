@@ -117,7 +117,7 @@ int main(int argc, char** argv )
     };
 
     NDVector<int, 2> fastSize = {32, 32};
-    if (!"correct for sqrt") {
+    if ("correct for sqrt") {
         for (auto & pair : images) {
             cv::Mat &img = pair.second._image;
             Frame &frame = pair.second;
@@ -125,8 +125,8 @@ int main(int argc, char** argv )
             for (int y = 0; y < imgSize[1]; y++) {
                 for (int x = 0; x < imgSize[0]; x++) {
                     img.at<uint8_t>(y, x*3) = (std::pow((float)img.at<uint8_t>(y, x*3), 2))*0.00392156862;
-                    img.at<uint8_t>(y, x*3+1) = (std::pow((float)img.at<uint8_t>(y, x*3), 2))*0.00392156862;
-                    img.at<uint8_t>(y, x*3+2) = (std::pow((float)img.at<uint8_t>(y, x*3), 2))*0.00392156862;
+                    img.at<uint8_t>(y, x*3+1) = (std::pow((float)img.at<uint8_t>(y, x*3+1), 2))*0.00392156862;
+                    img.at<uint8_t>(y, x*3+2) = (std::pow((float)img.at<uint8_t>(y, x*3+2), 2))*0.00392156862;
                 }
             }
         }
@@ -180,42 +180,31 @@ int main(int argc, char** argv )
             int dilation_size = 1;
             cv::Mat element = cv::getStructuringElement(dilation_type, cv::Size(2*dilation_size+1, 2*dilation_size+1), cv::Point(dilation_size, dilation_size));
             cv::dilate(frame._fastMask, frame._fastMask, element);
-            
-            // declare Mat variables, thr, gray and src
+
             cv::Mat thr, gray;
-            
-            // convert image to grayscale
+
             cv::cvtColor(frame._fastMask, gray, cv::COLOR_BGR2GRAY);
-            
-            // convert grayscale to binary image
-            // cv::threshold(gray, thr, 100, 255, cv::THRESH_BINARY);
             
             cv::Mat canny_output;
             std::vector<std::vector<cv::Point> > contours;
             std::vector<cv::Vec4i> hierarchy;
             
-            // detect edges using canny
             cv::Canny(gray, canny_output, 50, 150, 3);
             
-            // find contours
             cv::findContours(canny_output, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
             
-            // get the moments
             std::vector<cv::Moments> mu(contours.size());
             for (uint i = 0; i < contours.size(); i++)
                 mu[i] = moments(contours[i], false);
             
-            // get the centroid of figures.
             std::vector<cv::Point2f> mc(contours.size());
             for (uint i = 0; i < contours.size(); i++)
                 mc[i] = cv::Point2f(mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00);
-            
             // draw contours
-            cv::Mat drawing(canny_output.size(), CV_8UC3, cv::Scalar(255,255,255));
-            // memset(&frame._fastMask.at<uint8_t>(0, 0), 0, frame._fastMask.size().height*frame._fastMask.size().width*3);
+            // cv::Mat drawing(canny_output.size(), CV_8UC3, cv::Scalar(255,255,255));
             for (uint i = 0; i<contours.size(); i++) {
-                cv::Scalar color(167,151,0); // B G R values
-                cv::drawContours(drawing, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
+                cv::Scalar color(255,255,255);
+                // cv::drawContours(drawing, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
                 if (!std::isnormal(mc[i].x))
                     continue;
                 frame.addMatch(NDVector<float, 2>{mc[i].x, mc[i].y});
@@ -234,64 +223,65 @@ int main(int argc, char** argv )
                 img.at<uint8_t>((y), (x+1)*3+1) = 0;
                 img.at<uint8_t>((y), (x-1)*3+1) = 0;
 
-                cv::circle(drawing, mc[i], 4, color, -1, 8, 0);
+                // cv::circle(drawing, mc[i], 4, color, -1, 8, 0);
             }
             
-            // show the resultant image
             // cv::namedWindow("Contours", cv::WINDOW_AUTOSIZE);
             // cv::imshow("Contours", drawing);
             // cv::waitKey(0);
         }
         frame.updateTree();
     }
-    std::cout << std::endl;
-    auto itPrev = images.begin();
-    for (auto it = ++images.begin(); it != images.end(); itPrev++, it++) {
+    while (1) {
+        std::cout << std::endl;
+        auto itPrev = images.begin();
+        for (auto it = ++images.begin(); it != images.end(); itPrev++, it++) {
 
-        Frame &framePrev = (itPrev)->second;
-        Frame &frame = (it)->second;
+            Frame &framePrev = (itPrev)->second;
+            Frame &frame = (it)->second;
 
-        cv::Mat merged;
-        cv::vconcat(framePrev._image, frame._image, merged);
-        cv::Mat fastMask(frame._image.size().height, frame._image.size().width, CV_8UC3, cv::Scalar(0, 0, 0));
+            cv::Mat merged;
+            cv::vconcat(framePrev._image, frame._image, merged);
+            cv::Mat fastMask(frame._image.size().height, frame._image.size().width, CV_8UC3, cv::Scalar(0, 0, 0));
 
 
-        std::cout << DEBUGVAR(framePrev._descriptors.size()) << std::endl;  
-        // std::unordered_map<uint128_t, Descriptor const *> descriptor;
-        // std::unordered_map<uint128_t, Descriptor const *> descriptorPrev;
+            std::cout << DEBUGVAR(framePrev._descriptors.size()) << std::endl;  
+            // std::unordered_map<uint128_t, Descriptor const *> descriptor;
+            // std::unordered_map<uint128_t, Descriptor const *> descriptorPrev;
 
-        // for (Descriptor const &des : frame._descriptors)
-        //     descriptor.emplace(des._brief.res, &des);
-        // for (Descriptor const &des : framePrev._descriptors)
-        //     descriptorPrev.emplace(des._brief.res, &des);
-        NDVector<float, 2> averageDep = {0, 0};
-        float totDep = 0;
-        for (Descriptor const &des : frame._descriptors) {
-            fastMask.at<uint8_t>(des[1], des[0]*3+1) = 255;
+            // for (Descriptor const &des : frame._descriptors)
+            //     descriptor.emplace(des._brief.res, &des);
+            // for (Descriptor const &des : framePrev._descriptors)
+            //     descriptorPrev.emplace(des._brief.res, &des);
+            NDVector<float, 2> averageDep = {0, 0};
+            float totDep = 0;
+            for (Descriptor const &des : frame._descriptors) {
+                fastMask.at<uint8_t>(((int)des[1]), ((int)des[0])*3+1) = 255;
 
-            std::vector<Descriptor *> resprev = findNClose(*framePrev._fastMatch, NDVector<float, 2>{des}, 1);
-            std::vector<Descriptor *> res = findNClose(*frame._fastMatch, NDVector<float, 2>{*resprev[0]}, 1);
-            if (res[0] != &des)
-                continue;
+                std::vector<Descriptor *> resprev = findNClose(*framePrev._fastMatch, NDVector<float, 2>{des}, 1);
+                std::vector<Descriptor *> res = findNClose(*frame._fastMatch, NDVector<float, 2>{*resprev[0]}, 1);
+                if (res[0] != &des)
+                    continue;
 
-            int diff = des._brief.diff(resprev[0]->_brief);
-            if (diff < 128*0.50) {
-                cv::Point p1((*resprev[0])[0], (*resprev[0])[1]), p2(des[0], des[1]+framePrev._size[1]);
-                cv::line(merged, p1, p2, cv::Scalar(0, 0, 0), 1, cv::LINE_AA);
+                int diff = des._brief.diff(resprev[0]->_brief);
+                if (diff < 128*0.2) {
+                    cv::Point p1((*resprev[0])[0], (*resprev[0])[1]), p2(des[0], des[1]+framePrev._size[1]);
+                    cv::line(merged, p1, p2, cv::Scalar(0, 0, 0), 1, cv::LINE_AA);
+                }
+
             }
+            averageDep /= totDep;
 
+
+
+            // std::cout << type2str(merged.type()) << std::endl;
+            cv::vconcat(merged, fastMask, merged);
+
+            cv::namedWindow("Display Image", cv::WINDOW_AUTOSIZE);
+            cv::imshow("Display Image", merged);
+            // cv::waitKey(0);
+            cv::waitKey(1E3/30);
         }
-        averageDep /= totDep;
-
-
-
-        // std::cout << type2str(merged.type()) << std::endl;
-        cv::vconcat(merged, fastMask, merged);
-
-        cv::namedWindow("Display Image", cv::WINDOW_AUTOSIZE);
-        cv::imshow("Display Image", merged);
-        // cv::waitKey(0);
-        cv::waitKey(1E3/10);
     }
     return 0;
 }

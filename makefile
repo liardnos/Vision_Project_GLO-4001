@@ -1,7 +1,5 @@
 
 
-all: SDL
-
 configure:
 	-rm -rf external
 	mkdir external
@@ -25,15 +23,15 @@ reSDL:
 	cd buildSDL && cmake -D CMAKE_BUILD_TYPE=Release -D SDL_DISPLAY=ON .. && make -j6
 	cp -r assets buildSDL/
 
-SDL:
+all:
 	clear
 	cd buildSDL && cmake -D CMAKE_BUILD_TYPE=Release ..
 	cd buildSDL && make -j 6 || clear && make
 
-run: SDL
-	cd buildSDL && ./Vision /home/loock/Kitti/2011_09_26/2011_09_26_drive_0001_sync/image_00/data
+run: all
+	cd buildSDL && ./Vision ~/Kitti/2011_09_26/2011_09_26_drive_0001_sync/image_00/data
 
-valgrind: SDL
+valgrind: all
 	##########################################################
 	#                       VALGRIND                         #
 	##########################################################
